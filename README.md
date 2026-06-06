@@ -39,10 +39,9 @@ If you’ve ever wanted to write your own bootloader but got stuck on assembly s
 ### Build the compiler
 
 ```bash
-git clone https://github.com/yourname/sio.git
+git clone https://github.com/OFFMN-SHARP/sio.git
 cd sio
 dotnet build -c Release
-dotnet run -- build examples/hello.sio
 ```
 
 ### Write your first Sio program
