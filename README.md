@@ -125,7 +125,7 @@ Parser.cs → Head() → Import() → AST.Paeser()
 
 ---
 
-##名字
+## NAME
 
 SiO = silicon monoxide — an unstable intermediate oxide that exists briefly before becoming SiO₂. A bootloader is the same: a transient that exists just long enough to bring up the real system, then disappears. Sio the language is named after this idea.
 
