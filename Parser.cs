@@ -38,6 +38,9 @@ namespace Sio
         }
         public static void Include()
         {
+            if (Program.SIOFile.Length <= 2) return;
+            string? incLine = Program.SIOFile[2];
+            if (string.IsNullOrEmpty(incLine) || !incLine.StartsWith("@inc=")) return;
             List<string> paths = new List<string>();
             string incget = Program.SIOFile[2] ?? "@inc=undef";
             if(incget == "@inc=undef")return;
@@ -116,11 +119,11 @@ namespace Sio
                         alllns.Remove(line);
                     }
                     var allpsred = string.Join(Environment.NewLine,alllns);
-                    FileTextParsered.Add(file, allpsred);
-                    foreach (var kvp in FileTextParsered)
-                    {
-                        IncludedCode.AppendLine(kvp.Value);
-                    }
+                    FileTextParsered.Add(file, allpsred);   
+                }
+                foreach (var kvp in FileTextParsered)
+                {
+                    IncludedCode.AppendLine(kvp.Value);
                 }
             }
         }
@@ -504,11 +507,11 @@ mboot_magic: resd 1
         public static StringBuilder IncludedCode = new StringBuilder();
         public static void MainParser()
         {
-            PctMode();
-            Include();
-            Import();
-            Head();
-            AST.Paeser();
+            PctMode();         // 1. @pctmode
+            Include();         // 2. @inc= 收集被包含文件
+            Head();            // 3. 引导头（先生成）
+            Import();          // 4. @lib= 库代码（追加在引导头后面）
+            AST.Paeser();      // 5. 用户代码（追加在库代码后面）
         }
     }
 }

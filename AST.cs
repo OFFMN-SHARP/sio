@@ -19,6 +19,7 @@ namespace Sio
         public static string SioCode = string.Empty;
         public static Dictionary<string, FunctionCallInfo> LibFunctions = new();
         public static Dictionary<string, FunctionCallInfo> DevFunctions = new();
+        public static Dictionary<string, string> StringConstants = new();
         public static Dictionary<string, string[]> Codes = new();
         public static Dictionary<string, string> VariablesLabels = new();
         public static void AddLibFunction(string name, string label, string libname, int paramCount, string relvar, string[] paramSlots)
@@ -303,6 +304,14 @@ namespace Sio
                 // pids 的 .exit 已经在 Generate 里生成了
                 if (!funcInfo.IsPids)
                     Parsered.AppendLine("    ret");
+            }
+            if (StringConstants.Count > 0)
+            {
+                Parsered.AppendLine("; ===== String Constants =====");
+                foreach (var kvp in StringConstants)
+                {
+                    Parsered.AppendLine($"{kvp.Key}: db \"{kvp.Value}\", 0");
+                }
             }
             return Parsered;
         }
@@ -660,11 +669,11 @@ namespace Sio
             if (int.TryParse(val, out _))
                 return val;
 
-            // 如果是字符串字面量 "hello" → 需要字符串标签
             if (val.StartsWith("\"") && val.EndsWith("\""))
             {
+                string content = val.Substring(1, val.Length - 2);  // 去掉引号，得到 "hello"
                 string strLabel = $"_sio_str_{labelCounter++}";
-                // 字符串常量会由调用者另行处理
+                StringConstants[strLabel] = content;  // ← 存到字典里
                 return strLabel;
             }
 

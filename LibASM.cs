@@ -27,58 +27,103 @@ _sio_librel_console_ret:                 dw 0
 ";
         public static string ConsoleLib = @"
 ; ===== Console Lib =====
-; 待实现：INT 10h 文本模式操作
-
+; INT 10h 文本模式操作
 _sio_libfn_console_putsln:
-    ; TODO
+    push si
+    mov si, [_sio_args_console_putsln_string]
+.loop_pln:
+    lodsb
+    or al, al
+    jz .done_pln
+    mov ah, 0x0E
+    int 0x10
+    jmp .loop_pln
+.done_pln:
+    mov al, 0x0D
+    mov ah, 0x0E
+    int 0x10
+    mov al, 0x0A
+    mov ah, 0x0E
+    int 0x10
+    pop si
     ret
-
 _sio_libfn_console_puts:
-    ; TODO
+    push si
+    mov si, [_sio_args_console_puts_string]
+.loop_ps:
+    lodsb
+    or al, al
+    jz .done_ps
+    mov ah, 0x0E
+    int 0x10
+    jmp .loop_ps
+.done_ps:
+    pop si
     ret
-
 _sio_libfn_console_curoff:
-    ; TODO
+    push ax
+    push cx
+    mov ah, 0x01
+    mov cx, 0x2607
+    int 0x10
+    pop cx
+    pop ax
     ret
-
 _sio_libfn_console_curon:
-    ; TODO
+    push ax
+    push cx
+    mov ah, 0x01
+    mov cx, 0x0507
+    int 0x10
+    pop cx
+    pop ax
     ret
-
-_sio_libfn_console_gopos:
-    ; TODO
-    ret
-
-_sio_libfn_console_gotpos:
-    ; TODO
-    ret
-
 _sio_libfn_console_clscr:
-    ; TODO
+    push ax
+    mov ah, 0x00
+    mov al, 0x03
+    int 0x10
+    pop ax
     ret
-
-_sio_libfn_console_clln:
-    ; TODO
+_sio_libfn_console_gopos:
+    push ax
+    push bx
+    push dx
+    mov ah, 0x02
+    mov bh, 0
+    mov dh, [_sio_args_console_gopos_row]
+    mov dl, [_sio_args_console_gopos_col]
+    int 0x10
+    pop dx
+    pop bx
+    pop ax
     ret
-
 _sio_libfn_console_txtclor:
-    ; TODO
+    push ax
+    push bx
+    mov bl, [_sio_args_console_txtclor_color]
+    mov ah, 0x0B
+    mov bh, 0
+    int 0x10
+    pop bx
+    pop ax
     ret
-
 _sio_libfn_console_bgclor:
-    ; TODO
+    push ax
+    push bx
+    mov bl, [_sio_args_console_bgclor_color]
+    mov ah, 0x0B
+    mov bh, 0
+    int 0x10
+    pop bx
+    pop ax
     ret
-
+; 下面这些函数可以后续再实现，先用 TODO 占位
+_sio_libfn_console_gotpos:
 _sio_libfn_console_usrpwd:
-    ; TODO
-    ret
-
 _sio_libfn_console_typewriter:
-    ; TODO
-    ret
-
 _sio_libfn_console_stpgecode:
-    ; TODO
+_sio_libfn_console_clln:
     ret
 ";
 
