@@ -13,27 +13,32 @@ namespace Sio
         {
             while (true)
             {
-                ConsoleColor originalBg = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.BackgroundColor = ConsoleColor.White;
+                Console.BackgroundColor = ConsoleColor.Blue;
                 Console.Write("Sio");
-                Console.BackgroundColor=originalBg;
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.BackgroundColor=ConsoleColor.Blue;
-                Console.Write($"[Ver{Program.Ver}|{Environment.UserName}@{Environment.MachineName}]");
-                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write($"[Ver{Program.Ver:F2}|Build:dev]");
+                Console.BackgroundColor = ConsoleColor.Yellow;
+                Console.Write($"[{DateTime.Now:HH:mm:ss}|{Environment.UserName}|{Environment.MachineName}]");
                 Console.BackgroundColor = ConsoleColor.White;
-                Console.WriteLine($"<{Directory.GetCurrentDirectory}>");
+                Console.WriteLine($"<{Directory.GetCurrentDirectory()}>");
                 Console.ResetColor();
-                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.Write("└──>");
                 Console.ResetColor();
+                int originalLeft = Console.CursorLeft;
+                int originalTop = Console.CursorTop;
+                Console.Write(new string(' ', Console.BufferWidth - Console.CursorLeft - 1));
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write('<');
+                Console.ResetColor();
+                Console.SetCursorPosition(originalLeft, originalTop);
                 string Input = Console.ReadLine() ?? "@String_NULL";
                 Parser(Input);
                 Console.WriteLine();
                 Console.WriteLine();
+                Console.WriteLine();
             }
         }
+
         public static void Parser(string command)
         {
             if (string.IsNullOrWhiteSpace(command)) return;

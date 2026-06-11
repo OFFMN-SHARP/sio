@@ -1,0 +1,6 @@
+@ppc=bios
+@lib=console
+
+pdc main():
+    putsln("Hello from Sio!")
+    ret(0)

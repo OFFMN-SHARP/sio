@@ -54,4 +54,107 @@ namespace Sio
         }
 
     }
+    public static class ErrorReporter
+    {
+        // 核心报错函数
+        public static void Report(ErrorInfo info)
+        {
+            // 计算框线宽度（基于最长的内容行）
+            int maxLen = Math.Max(
+                $"Code: {info.Code}".Length,
+                Math.Max(
+                    $" *Line: {info.Line}".Length,
+                    Math.Max(
+                        $" *Reason: {info.Reason}".Length,
+                        $" *Document location: {info.Location}".Length
+                    )
+                )
+            );
+
+            int boxWidth = maxLen + 2;  // 左右留白
+
+            // 第一行：Code
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Write("Code: ");
+            Console.ResetColor();
+            Console.WriteLine(info.Code);
+
+            // 框线顶部
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("├");
+            Console.Write(new string('═', boxWidth));
+            Console.WriteLine("┐");
+            Console.ResetColor();
+
+            // Line
+            Console.Write("│ ");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("*Line: ");
+            Console.ResetColor();
+            Console.Write(info.Line);
+            Console.Write(new string(' ', boxWidth - $"*Line: {info.Line}".Length));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(" │");
+            Console.ResetColor();
+
+            // Reason
+            Console.Write("│ ");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("*Reason: ");
+            Console.ResetColor();
+            Console.Write(info.Reason);
+            Console.Write(new string(' ', boxWidth - $"*Reason: {info.Reason}".Length));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(" │");
+            Console.ResetColor();
+
+            // Document location
+            Console.Write("│ ");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("*Document location: ");
+            Console.ResetColor();
+            Console.Write(info.Location);
+            Console.Write(new string(' ', boxWidth - $"*Document location: {info.Location}".Length));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(" │");
+            Console.ResetColor();
+
+            // 框线底部
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("└");
+            Console.Write(new string('═', boxWidth));
+            Console.WriteLine("┘");
+            Console.ResetColor();
+        }
+
+        // 错误信息数据类
+        public class ErrorInfo
+        {
+            public string Code { get; set; }
+            public int Line { get; set; }
+            public string Reason { get; set; }
+            public string Location { get; set; }
+
+            public static ErrorInfo FromEx(string code, Exception ex, string filePath, int line)
+            {
+                return new ErrorInfo
+                {
+                    Code = code,
+                    Line = line,
+                    Reason = ex.Message,
+                    Location = filePath
+                };
+            }
+        }
+
+        // 预设错误码（可扩展）
+        public static class Codes
+        {
+            public const string FileNotFound = "SIO-E0001";
+            public const string SyntaxError = "SIO-E0002";
+            public const string UnknownFunction = "SIO-E0003";
+            public const string NasmFailed = "SIO-E0004";
+            public const string ParamError = "SIO-E0005";
+        }
+    }
 }

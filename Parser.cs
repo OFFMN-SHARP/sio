@@ -184,7 +184,6 @@ dw 0xAA55
 
 ; ===== 第二段：运行时库 + MainBooter =====
 ; 注意：这里的 org 告诉 NASM 这段代码将被加载到 0x7E00
-[org 0x7E00]
 ");
                     // 有保护模式：先切换，再进 MainBooter
                     if (Program.EnableProtectedMode)

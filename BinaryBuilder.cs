@@ -11,6 +11,12 @@ namespace Sio
     {
         public static void Builder(string filename)
         {
+            if (!CheckNasmAvailable())
+            {
+                Console.WriteLine("NASM not found. Installing...");
+                InstallNasm();
+            }
+
             if (!File.Exists(filename))
             {
                 Console.WriteLine($"File not found: {filename}");
@@ -51,6 +57,114 @@ namespace Sio
             {
                 Console.WriteLine("NASM Error:");
                 Console.WriteLine(error);
+            }
+        }
+
+        public static bool CheckNasmAvailable()
+        {
+            try
+            {
+                var proc = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "nasm",
+                    Arguments = "--version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                });
+                proc.WaitForExit(1000);
+                return proc.ExitCode == 0;
+            }
+            catch { return false; }
+        }
+        public static void InstallNasm()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                //Process.Start("winget", "install nasm").WaitForExit();
+                using(Process proc = new Process())
+                {
+                    proc.StartInfo.FileName = "powershell";
+                    proc.StartInfo.Arguments = "-Command \"winget install nasm\"";
+                    proc.StartInfo.UseShellExecute = false;
+                    proc.StartInfo.RedirectStandardOutput = true;
+                    proc.StartInfo.RedirectStandardError = true;
+                    proc.Start();
+                    proc.BeginErrorReadLine();
+                    proc.BeginOutputReadLine();
+                    List<string> Lines = new List<string>();
+                    proc.OutputDataReceived += (sender, e) =>{
+                        Lines.Add(e.Data??"");
+                        TaskWindow.Draw("Installing NASM", Lines.ToArray());
+                    };
+                    proc.ErrorDataReceived += (sender, e) =>{
+                        Lines.Add(e.Data??"");
+                        TaskWindow.Draw("Installing NASM", Lines.ToArray());
+                    };
+                    proc.WaitForExitAsync();
+                    if (proc.ExitCode != 0)
+                    {
+                        Console.WriteLine("Failed to install NASM:");
+                    }
+                }
+            }
+            else if (OperatingSystem.IsLinux())
+            {
+                // 检测是 apt 系还是 pacman 系
+                if (File.Exists("/usr/bin/apt"))
+                    //Process.Start("sudo", "apt install -y nasm").WaitForExit();
+                    using(Process proc=new Process())
+                    {
+                        proc.StartInfo.FileName = "sudo";
+                        proc.StartInfo.Arguments = "apt install -y nasm";
+                        proc.StartInfo.UseShellExecute = false;
+                        proc.StartInfo.RedirectStandardOutput = true;
+                        proc.StartInfo.RedirectStandardError = true;
+                        proc.Start();
+                        proc.BeginErrorReadLine();
+                        proc.BeginOutputReadLine();
+                        List<string> Lines = new List<string>();
+                        proc.OutputDataReceived += (sender, e) =>{
+                            Lines.Add(e.Data??"");
+                            TaskWindow.Draw("Installing NASM", Lines.ToArray());
+                        };
+                        proc.ErrorDataReceived += (sender, e) =>{
+                            Lines.Add(e.Data??"");
+                            TaskWindow.Draw("Installing NASM", Lines.ToArray());
+                        };
+                        proc.WaitForExitAsync();
+                        if (proc.ExitCode != 0)
+                        {
+                            Console.WriteLine("Failed to install NASM:");
+                        }
+                    }
+                else if (File.Exists("/usr/bin/pacman"))
+                    //Process.Start("sudo", "pacman -S nasm").WaitForExit();
+                    using(Process proc=new Process())
+                    {
+                        proc.StartInfo.FileName = "sudo";
+                        proc.StartInfo.Arguments = "pacman -S nasm";
+                        proc.StartInfo.UseShellExecute = false;
+                        proc.StartInfo.RedirectStandardOutput = true;
+                        proc.StartInfo.RedirectStandardError = true;
+                        proc.Start();
+                        proc.BeginErrorReadLine();
+                        proc.BeginOutputReadLine();
+                        List<string> Lines = new List<string>();
+                        proc.OutputDataReceived += (sender, e) =>{
+                            Lines.Add(e.Data??"");
+                            TaskWindow.Draw("Installing NASM", Lines.ToArray());
+                        };
+                        proc.ErrorDataReceived += (sender, e) =>{
+                            Lines.Add(e.Data??"");
+                            TaskWindow.Draw("Installing NASM", Lines.ToArray());
+                        };
+                        proc.WaitForExitAsync();
+                        if (proc.ExitCode != 0)
+                        {
+                            Console.WriteLine("Failed to install NASM:");
+                        }
+                    }
             }
         }
     }
