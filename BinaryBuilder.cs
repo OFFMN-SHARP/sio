@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Sio.ErrorReporter;
 
 namespace Sio
 {
@@ -13,13 +14,18 @@ namespace Sio
         {
             if (!CheckNasmAvailable())
             {
-                Console.WriteLine("NASM not found. Installing...");
                 InstallNasm();
             }
 
             if (!File.Exists(filename))
             {
-                Console.WriteLine($"File not found: {filename}");
+                ErrorReporter.Report(new ErrorInfo
+                {
+                    Code = ErrorReporter.Codes.FileNotFound,
+                    Line = -1,
+                    Reason = $"文件不存在: {filename}",
+                    Location = filename
+                });
                 return;
             }
 
@@ -28,6 +34,19 @@ namespace Sio
 
             // 2. 解析并生成 ASM
             Parser.MainParser();
+
+            // 检查 ParseredAsm 是否为空（解析出错时可能为空）
+            if (Program.ParseredAsm.Length == 0)
+            {
+                ErrorReporter.Report(new ErrorInfo
+                {
+                    Code = ErrorReporter.Codes.SyntaxError,
+                    Line = -1,
+                    Reason = "解析失败，未生成 ASM 代码",
+                    Location = filename
+                });
+                return;
+            }
 
             // 3. 写 ASM 文件
             string asmPath = Path.ChangeExtension(filename, ".asm");
@@ -52,13 +71,29 @@ namespace Sio
             {
                 Console.WriteLine($"Compiled: {binPath}");
                 Console.WriteLine($"Size: {new FileInfo(binPath).Length} bytes");
+                long targetSize = 1024 * 1024; // 1 MB
+                var fi = new FileInfo(binPath);
+                if (fi.Length < targetSize)
+                {
+                    using (var fs = fi.OpenWrite())
+                    {
+                        fs.SetLength(targetSize);
+                    }
+                    Console.WriteLine($"Padded to: {targetSize} bytes");
+                }
             }
             else
             {
-                Console.WriteLine("NASM Error:");
-                Console.WriteLine(error);
+                ErrorReporter.Report(new ErrorInfo
+                {
+                    Code = ErrorReporter.Codes.NasmFailed,
+                    Line = -1,
+                    Reason = $"NASM 编译失败: {error}",
+                    Location = asmPath
+                });
             }
         }
+
 
         public static bool CheckNasmAvailable()
         {

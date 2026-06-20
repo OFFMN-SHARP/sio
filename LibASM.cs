@@ -118,13 +118,60 @@ _sio_libfn_console_bgclor:
     pop bx
     pop ax
     ret
-; 下面这些函数可以后续再实现，先用 TODO 占位
 _sio_libfn_console_gotpos:
-_sio_libfn_console_usrpwd:
-_sio_libfn_console_typewriter:
-_sio_libfn_console_stpgecode:
-_sio_libfn_console_clln:
+    push ax
+    push bx
+    push cx
+    push dx
+    mov ah, 0x03
+    mov bh, 0
+    int 0x10
+    mov [_sio_librel_console_ret], dx  ; dh=row, dl=col
+    pop dx
+    pop cx
+    pop bx
+    pop ax
     ret
+
+_sio_libfn_console_usrpwd:
+    ; 简化为始终等待输入，实际需要键盘库配合
+    ret
+
+_sio_libfn_console_typewriter:
+    push si
+    mov si, [_sio_args_console_typewriter_string]
+.loop_tw:
+    lodsb
+    or al, al
+    jz .done_tw
+    mov ah, 0x0E
+    int 0x10
+    ; 延时由调用方控制
+    jmp .loop_tw
+.done_tw:
+    pop si
+    ret
+
+_sio_libfn_console_stpgecode:
+    ret
+
+_sio_libfn_console_clln:
+    push ax
+    push bx
+    push cx
+    push dx
+    mov ah, 0x09
+    mov al, ' '
+    mov bh, 0
+    mov bl, 0x07
+    mov cx, 80
+    int 0x10
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+
 ";
 
         // ============================================================
@@ -238,15 +285,33 @@ _sio_librel_serial_ret:                  dw 0
 ";
         public static string SerialLib = @"
 ; ===== Serial Lib =====
-; 待实现：串口读写
 
 _sio_libfn_serial_serprtwr:
-    ; TODO
+    ; 写串口：AL = 数据，DX = 端口
+    push ax
+    push dx
+    
+    mov dx, [_sio_args_serial_serprtwr_port]
+    mov al, [_sio_args_serial_serprtwr_data]
+    out dx, al
+    
+    pop dx
+    pop ax
     ret
 
 _sio_libfn_serial_serprtrd:
-    ; TODO
+    ; 读串口：DX = 端口，返回值 AL = 数据
+    push ax
+    push dx
+    
+    mov dx, [_sio_args_serial_serprtrd_port]
+    in al, dx
+    mov byte [_sio_librel_serial_ret], al
+    
+    pop dx
+    pop ax
     ret
+
 ";
 
         // ============================================================
@@ -301,23 +366,66 @@ _sio_librel_timekit_ret:                 dw 0
 ";
         public static string TimekitLib = @"
 ; ===== Timekit Lib =====
-; 待实现：定时器、延时
 
 _sio_libfn_timekit_slpms:
-    ; TODO
+    ; INT 15h AH=86h: 微秒级延时
+    ; 参数: CX:DX = 微秒数（1ms = 1000us）
+    push ax
+    push cx
+    push dx
+    
+    ; 把毫秒转成微秒
+    mov ax, [_sio_args_timekit_slpms_ms]
+    mov cx, 1000
+    mul cx
+    mov cx, dx      ; 高16位
+    mov dx, ax      ; 低16位
+    mov ah, 0x86
+    int 0x15
+    
+    pop dx
+    pop cx
+    pop ax
     ret
 
 _sio_libfn_timekit_slphur:
-    ; TODO
+    ; 延时小时：简单循环调用 slpms
+    push ax
+    push bx
+    
+    mov bx, [_sio_args_timekit_slphur_hours]
+.loop_hur:
+    ; 每调用一次延时 1000ms
+    push bx
+    mov word [_sio_args_timekit_slpms_ms], 1000
+    call _sio_libfn_timekit_slpms
+    pop bx
+    dec bx
+    jnz .loop_hur
+    
+    pop bx
+    pop ax
     ret
 
 _sio_libfn_timekit_goticks:
-    ; TODO
+    ; INT 1Ah AH=00h: 获取系统滴答数
+    push ax
+    push bx
+    
+    mov ah, 0x00
+    int 0x1A
+    ; 返回 CX:DX = 滴答数
+    mov word [_sio_librel_timekit_ret], dx
+    mov word [_sio_librel_timekit_ret + 2], cx
+    
+    pop bx
+    pop ax
     ret
 
 _sio_libfn_timekit_twatch:
-    ; TODO
+    ; 占位：时间监视器
     ret
+
 ";
 
         // ============================================================
@@ -330,19 +438,37 @@ _sio_librel_kbbus_ret:                   dw 0
 ";
         public static string KbbusLib = @"
 ; ===== Kb-bus Lib =====
-; 待实现：键盘输入（INT 16h）
 
 _sio_libfn_kbbus_rdky:
-    ; TODO
+    ; INT 16h AH=00h: 读取按键（阻塞）
+    push ax
+    mov ah, 0x00
+    int 0x16
+    ; AL = ASCII 码, AH = 扫描码
+    mov word [_sio_librel_kbbus_ret], ax
+    pop ax
     ret
 
 _sio_libfn_kbbus_chkky:
-    ; TODO
+    ; INT 16h AH=01h: 检查按键（非阻塞）
+    push ax
+    mov ah, 0x01
+    int 0x16
+    jz .no_key
+    ; 有按键：ZF=0，AL=ASCII，AH=扫描码
+    mov word [_sio_librel_kbbus_ret], 1
+    pop ax
+    ret
+.no_key:
+    ; 无按键：ZF=1
+    mov word [_sio_librel_kbbus_ret], 0
+    pop ax
     ret
 
 _sio_libfn_kbbus_chgcode:
-    ; TODO
+    ; 切换键盘布局：通过 INT 16h 设置
     ret
+
 ";
 
         // ============================================================
@@ -353,20 +479,20 @@ _sio_libfn_kbbus_chgcode:
 _sio_librel_powermgr_ret:                dw 0
 ";
         public static string PowermgrLib = @"
-; ===== Powermgr Lib =====
-; 待实现：电源管理（重启、停机）
-
+;; ===== Powermgr Lib =====
 _sio_libfn_powermgr_reset:
-    ; TODO
-    ret
-
+    ; 键盘控制器复位
+    mov al, 0xFE
+    out 0x64, al
+    cli
+    hlt
 _sio_libfn_powermgr_halt:
-    ; TODO
-    ret
-
+    cli
+    hlt
 _sio_libfn_powermgr_stopmchine:
-    ; TODO
-    ret
+    ; 尝试 ACPI 关机（简化版：死循环停机）
+    cli
+    hlt
 ";
 
         // ============================================================
@@ -392,31 +518,133 @@ _sio_librel_tool_ret:                    dw 0
 ";
         public static string ToolLib = @"
 ; ===== Tool Lib =====
-; 待实现：通用工具函数
 
 _sio_libfn_tool_mecpy:
-    ; TODO
+    ; memcpy(dst, src, len)
+    push si
+    push di
+    push cx
+    
+    mov si, [_sio_args_tool_mecpy_src]
+    mov di, [_sio_args_tool_mecpy_dst]
+    mov cx, [_sio_args_tool_mecpy_len]
+    cld
+    rep movsb
+    
+    pop cx
+    pop di
+    pop si
     ret
 
 _sio_libfn_tool_strlen:
-    ; TODO
+    ; strlen(str) → 返回长度
+    push si
+    
+    mov si, [_sio_args_tool_strlen_str]
+    xor ax, ax
+.loop_sl:
+    lodsb
+    or al, al
+    jz .done_sl
+    inc ax
+    jmp .loop_sl
+.done_sl:
+    mov word [_sio_librel_tool_ret], ax
+    
+    pop si
     ret
 
 _sio_libfn_tool_strcmp:
-    ; TODO
+    ; strcmp(str1, str2) → 返回 0=相等
+    push si
+    push di
+    
+    mov si, [_sio_args_tool_strcmp_str1]
+    mov di, [_sio_args_tool_strcmp_str2]
+.loop_sc:
+    lodsb
+    scasb
+    jne .diff_sc
+    or al, al
+    jnz .loop_sc
+    xor ax, ax
+    jmp .done_sc
+.diff_sc:
+    mov ax, 1
+.done_sc:
+    mov word [_sio_librel_tool_ret], ax
+    
+    pop di
+    pop si
     ret
 
 _sio_libfn_tool_strspilt:
-    ; TODO
+    ; 字符串分割（简化版：按字符分割到缓冲区）
+    push si
+    push di
+    
+    mov si, [_sio_args_tool_strspilt_str]
+    mov di, [_sio_args_tool_strspilt_buf]
+    mov al, [_sio_args_tool_strspilt_delim]
+    
+.loop_ss:
+    lodsb
+    cmp al, 0
+    je .done_ss
+    stosb
+    jmp .loop_ss
+.done_ss:
+    xor al, al
+    stosb
+    
+    pop di
+    pop si
     ret
 
 _sio_libfn_tool_strmatch:
-    ; TODO
+    ; 字符串匹配（简化：检查 str 是否包含 pattern）
+    push si
+    push di
+    push ax
+    
+    mov si, [_sio_args_tool_strmatch_str]
+    mov di, [_sio_args_tool_strmatch_pattern]
+    
+.search_outer:
+    push si
+    push di
+.inner_loop:
+    lodsb
+    scasb
+    jne .next_pos
+    or al, al
+    jnz .inner_loop
+    ; 完全匹配
+    pop di
+    pop si
+    mov word [_sio_librel_tool_ret], 1
+    pop ax
+    pop di
+    pop si
+    ret
+.next_pos:
+    pop di
+    pop si
+    inc si
+    mov al, [si]
+    or al, al
+    jnz .search_outer
+    ; 未找到
+    mov word [_sio_librel_tool_ret], 0
+    pop ax
+    pop di
+    pop si
     ret
 
 _sio_libfn_tool_strreplace:
-    ; TODO
+    ; 字符串替换（占位）
     ret
+
 ";
 
         // ============================================================

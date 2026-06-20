@@ -263,7 +263,7 @@ namespace Sio
             }
             if (maincode != null)
             {
-                string asm = Generate(0, isPids, maincode);
+                string asm = Generate(1, isPids, maincode);
                 Parsered.AppendLine("MainBooter:");
                 Parsered.Append(asm);
                 if (!isPids)
@@ -271,7 +271,15 @@ namespace Sio
                     Parsered.AppendLine("    cli");
                     Parsered.AppendLine("    hlt");
                 }
-            }
+            }/*
+            if (StringConstants.Count > 0)
+            {
+                Parsered.AppendLine("; ===== String Constants =====");
+                foreach (var kvp in StringConstants)
+                {
+                    Parsered.AppendLine($"{kvp.Key}: db \"{kvp.Value}\", 0");
+                }
+            }*/
             return Parsered;
         }
         public static StringBuilder ASMParser()
@@ -572,6 +580,40 @@ namespace Sio
                         string[] args = string.IsNullOrWhiteSpace(argsStr)
                             ? new string[0]
                             : argsStr.Split(',').Select(a => a.Trim()).ToArray();
+
+                        // === qasm 预处理：直接插入 ASM，不走函数调用流程 ===
+                        if (funcName == "wrasm" || funcName == "ovrdeasmln" ||
+                            funcName == "adasm" || funcName == "rmasmln")
+                        {
+                            string[] qargs = args.Select(a => a.Trim('"')).ToArray();
+                            switch (funcName)
+                            {
+                                case "wrasm":
+                                    if (qargs.Length > 0)
+                                        output.AppendLine($"    {qargs[0]}");
+                                    break;
+                                case "ovrdeasmln":
+                                    if (qargs.Length > 1)
+                                    {
+                                        output.AppendLine($"; [ovrdeasmln line {qargs[0]}]");
+                                        output.AppendLine($"    {qargs[1]}");
+                                    }
+                                    break;
+                                case "adasm":
+                                    if (qargs.Length > 1)
+                                    {
+                                        output.AppendLine($"; [adasm after line {qargs[0]}]");
+                                        output.AppendLine($"    {qargs[1]}");
+                                    }
+                                    break;
+                                case "rmasmln":
+                                    if (qargs.Length > 0)
+                                        output.AppendLine($"; [rmasmln line {qargs[0]}]");
+                                    break;
+                            }
+                            i++;
+                            continue;
+                        }
 
                         // 查函数表
                         FunctionCallInfo funcInfo = null;

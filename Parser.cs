@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Markup;
+using static Sio.ErrorReporter;
 
 namespace Sio
 {
@@ -161,7 +162,7 @@ start:
 
     ; 加载第二段
     mov ah, 0x02
-    mov al, 8
+    mov al, 64
     mov ch, 0
     mov cl, 2
     mov dh, 0
@@ -506,11 +507,24 @@ mboot_magic: resd 1
         public static StringBuilder IncludedCode = new StringBuilder();
         public static void MainParser()
         {
-            PctMode();         // 1. @pctmode
-            Include();         // 2. @inc= 收集被包含文件
-            Head();            // 3. 引导头（先生成）
-            Import();          // 4. @lib= 库代码（追加在引导头后面）
-            AST.Paeser();      // 5. 用户代码（追加在库代码后面）
+            try
+            {
+                PctMode();
+                Include();
+                Head();
+                Import();
+                AST.Paeser();
+            }
+            catch (Exception ex)
+            {
+                ErrorReporter.Report(new ErrorInfo
+                {
+                    Code = "SIO-E9999",
+                    Line = -1,
+                    Reason = $"编译器内部错误: {ex.Message}",
+                    Location = Program.CurrentFilePath
+                });
+            }
         }
     }
 }
